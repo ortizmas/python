@@ -6,3 +6,8 @@
 # Packotes
 Para resolver o problema no SQLAlchemy, instale o seguinte pacote
 pip3 install flask_sqlalchemy
+
+# Server
+λ python3 -m http.server -b 127.0.0.1 8080
+λ flask run
+λ flask --app hello run
