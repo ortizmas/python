@@ -1,17 +1,49 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce.db'
 
 db = SQLAlchemy(app)
 
-# # Modelagem
+# Modelagem
+# User
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), nullable=False, unique=True)
+    password = db.Column(db.String(80), nullable=True)
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "password": self.password
+        }
+# Product
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=True) 
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "price": self.price,
+            "description": self.description
+        }
+
+@app.route('/login', methods=["POST"])
+def login():
+    data = request.json
+    if 'username' in data and 'password' in data:
+        user = User.query.filter_by(username=data["username"], password=data["password"]).first()
+        if user:
+            # return user.to_json()
+            return jsonify({"message": "Logado com Sucesso!!"})
+    return jsonify({"message": "Credenciais invalidas"}), 401
 
 @app.route('/api/products', methods=["GET"])
 def get_products():
@@ -46,13 +78,12 @@ def get_product_details(product_id):
     if not product:
         return jsonify({"message": "Produto não existe"}), 404
     
-    if isinstance(product, set):
-        return list(product)
+    return product.to_json()
     
     # Outro metodo
     # return jsonify({
-    #     "id":product.id,
-    #     "name":product.name, 
+    #     "id": product.id,
+    #     "name": product.name, 
     #     "price": product.price,
     #     "description": product.description
     # })
@@ -82,7 +113,8 @@ def delete_product(product_id):
 # Definir uma rota raiz (Página inicial) e a função que será executada ao requisitar
 @app.route('/')
 def hello_world():
-    return 'Bêm Vindo ao Sistema em Python'
+    products = Product.query.all()
+    return render_template('index.html', products=products)
 
 if __name__ == "__main__":
     app.run(debug=True)

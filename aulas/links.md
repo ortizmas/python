@@ -10,4 +10,24 @@ pip3 install flask_sqlalchemy
 # Server
 λ python3 -m http.server -b 127.0.0.1 8080
 λ flask run
+λ flask run --port 5001
 λ flask --app hello run
+
+# ======= Erro no server =======
+# Verifique se a porta já está em uso
+O Flask, por padrão, roda na porta 5000. Se outro processo estiver usando essa porta, você pode:
+Alterar a porta que o Flask está usando para uma disponível, executando:
+
+flask run --port 5001
+
+Ou verificar qual processo está usando a porta 5000 e matá-lo. Dependendo do sistema operacional:
+
+# Linux/Unix/MacOS:
+lsof -i :5000
+Em seguida, mate o processo:
+kill -9 <PID>
+
+# Windows: Primeiro, veja qual processo está ocupando a porta:
+netstat -ano | findstr :5000
+Use o ID do processo (PID) obtido para encerrar:
+taskkill /PID <PID> /F
