@@ -1,9 +1,14 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 # from flask_cors import CORS
 from flask_login import UserMixin, login_user, logout_user, LoginManager, login_required, current_user
+from werkzeug.serving import run_simple
 
 app = Flask(__name__)
+# Ativar modo de desenvolvimento explicitamente
+app.config['DEBUG'] = True
+app.config['ENV'] = 'development'
+
 app.config['SECRET_KEY'] = "minha_chave_123"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce.db'
 
@@ -27,6 +32,7 @@ class User(db.Model, UserMixin):
             "username": self.username,
             "password": self.password
         }
+
 # Product
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -192,14 +198,53 @@ def checkout():
     for item in cart_items:
         db.session.delete(item)
     db.session.commit()
-    
+
     return jsonify({"message": "Carrinho removido com sucesso"})
 
 # Definir uma rota raiz (Página inicial) e a função que será executada ao requisitar
 @app.route('/')
-def hello_world():
+def index():
+    # print('Debug:', app.debug)  # Verifica se o modo debug está ativado
     products = Product.query.all()
     return render_template('index.html', products=products)
 
+@app.route('/product/create')
+def create():
+    # print('Debug:', app.debug)  # Verifica se o modo debug está ativado
+    products = Product.query.all()
+    return render_template('create.html', products=products)
+
+@app.route('/product/store', methods=["GET", "POST"])
+def store():
+    if request.method == 'POST':
+        product = Product(name=request.form['name'], price=request.form['price'], description=request.form['description'])
+        db.session.add(product)
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('create.html')
+
+@app.route('/product/edit/<int:id>', methods=["GET", "POST"])
+def edit(id):
+    product = Product.query.get(id)
+    if request.method == "POST":
+        product.name = request.form["name"]
+        product.price = request.form["price"]
+        product.description = request.form["description"]
+        db.session.commit()
+        return redirect(url_for('index'))
+    
+    return render_template('edit.html', product=product) 
+
+@app.route('/product/delete/<int:product_id>')
+def delete(product_id):
+    product = Product.query.get(product_id)
+    if product:
+        db.session.delete(product)
+        db.session.commit()
+    return redirect(url_for('index'))
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    print('Debug Main:', app.debug)  # Verifica se o modo debug está ativado
+    app.run(port=5001, debug=True)
+    # run_simple('localhost', 5001, app, use_reloader=True, use_debugger=True)
+    # app.run(port=5001, debug=True, use_reloader=True)
