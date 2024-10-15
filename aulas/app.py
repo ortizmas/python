@@ -232,7 +232,7 @@ def edit(id):
         product.description = request.form["description"]
         db.session.commit()
         return redirect(url_for('index'))
-    
+     
     return render_template('edit.html', product=product) 
 
 @app.route('/product/delete/<int:product_id>')
