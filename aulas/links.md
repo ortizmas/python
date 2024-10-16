@@ -41,3 +41,30 @@ kill -9 <PID>
 netstat -ano | findstr :5000
 Use o ID do processo (PID) obtido para encerrar:
 taskkill /PID <PID> /F
+
+# COMMANDS
+https://docs.aws.amazon.com/cli/latest/reference/elasticbeanstalk/ 
+
+# INSTAL EB CLI
+https://docs.aws.amazon.com/pt_br/elasticbeanstalk/latest/dg/eb-cli3-install.html 
+`pip install virtualenv`
+D:\programing\aws-elastic-beanstalk-cli-setup\scripts (master -> origin)
+λ python ebcli_installer.py
+
+# Success!
+To complete installation, ensure `eb` is in PATH. You can ensure this by executing:
+```
+1. CMD Prompt:
+    cmd.exe /c "C:\\Users\\86316584563\\.ebcli-virtual-env\\executables\\path_exporter.bat"
+2. PowerShell:
+    & "C:\\Users\\86316584563\\.ebcli-virtual-env\\executables\\path_exporter.vbs"
+```
+NOTE: Additionally, you would need to **restart this shell**
+
+# Deploy
+https://docs.aws.amazon.com/pt_br/elasticbeanstalk/latest/dg/create-deploy-python-flask.html
+
+# command
+D:\programing\python\eb-api (main -> origin)
+λ eb init -p python-3.11 api-flask --region us-east-2
+λ eb create flask-env-dev
