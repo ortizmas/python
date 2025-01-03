@@ -1,44 +1,69 @@
-from flask import Flask, url_for, request
-import json
+import os
+import click
 
-app = Flask(__name__)
-app.debug = True
-
-
-@app.route("/")
-def hello_world():
-    name = "World Wide Web"
-    return f"<p>Hello, {name}!!</p>"
+from flask import Flask, current_app
+from flask_sqlalchemy import SQLAlchemy
+import sqlalchemy as sa
+from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 
-@app.route("/user/<username>/<int:old>")
-def hello_world_params(username, old):
-    name = "Sr."
-    print(f"Tipo da variable idade: {type(old)}")
-    return f"<p>Hello, {name} {username} (Tipo da variable idade: {old})!!</p>"
+class Base(DeclarativeBase):
+    pass
 
 
-@app.route("/about")
-def about():
-    name = "Sr."
-    return f"<p>Hello, {name} Eber!!</p>"
+db = SQLAlchemy(model_class=Base)
 
 
-@app.route("/contact")
-def contact():
-    name = "Contato ."
-    return f"<p>Nosso, {name}!!</p>"
+class User(db.Model):
+    id: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(sa.String, unique=True, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"User(id={self.id!r}, username={self.username!r})"
 
 
-@app.route("/projects", methods=["GET", "POST"])
-def projects():
-    method = request.method
-    if method == "POST":
-        data = json.loads(request.data.decode("utf-8"))
-        return data["cnpj"]
-    return f"The project page {method}"
+class Post(db.Model):
+    id: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(sa.String, nullable=False)
+    body: Mapped[str] = mapped_column(sa.String, nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        sa.Integer, sa.ForeignKey("user.id"), nullable=False
+    )
+    created: Mapped[datetime] = mapped_column(sa.DateTime, server_default=sa.func.now())
+
+    def __repr__(self) -> str:
+        return f"Post(id={self.id!r}, title={self.title!r}, user_id={self.user_id!r})"
 
 
-with app.test_request_context():
-    print(url_for("contact"))
-    print(url_for("about", next="/"))
+@click.command("init-db")
+def init_db_command():
+    global db
+    """Clear the existing data and create new tables."""
+    with current_app.app_context():
+        db.create_all()
+    click.echo("Initialized the database.")
+
+
+def create_app(test_config=None):
+    # create and configure the app
+    app = Flask(__name__, instance_relative_config=True)
+    app.config.from_mapping(
+        SECRET_KEY="dev",
+        SQLALCHEMY_DATABASE_URI="sqlite:///diobank.sqlite",
+    )
+
+    if test_config is None:
+        # load the instance config, if it exists, when not testing
+        app.config.from_pyfile("config.py", silent=True)
+    else:
+        # load the test config if passed in
+        app.config.from_mapping(test_config)
+
+    # Register the database commands
+    app.cli.add_command(init_db_command)
+
+    # initialize the database
+    db.init_app(app)
+
+    return app
