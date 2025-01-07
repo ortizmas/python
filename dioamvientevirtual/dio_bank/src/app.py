@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy as sa
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from flask_migrate import Migrate
 
 
 class Base(DeclarativeBase):
@@ -13,17 +14,21 @@ class Base(DeclarativeBase):
 
 
 db = SQLAlchemy(model_class=Base)
+migrate = Migrate()
 
 
 class User(db.Model):
+    __tablename__ = "user"
     id: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
     username: Mapped[str] = mapped_column(sa.String, unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, username={self.username!r})"
 
 
 class Post(db.Model):
+    __tablename__ = "post"
     id: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
     title: Mapped[str] = mapped_column(sa.String, nullable=False)
     body: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -50,7 +55,7 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY="dev",
-        SQLALCHEMY_DATABASE_URI="sqlite:///diobank.sqlite",
+        SQLALCHEMY_DATABASE_URI="sqlite:///blog.sqlite",
     )
 
     if test_config is None:
@@ -63,7 +68,14 @@ def create_app(test_config=None):
     # Register the database commands
     app.cli.add_command(init_db_command)
 
-    # initialize the database
+    # initialize extension
     db.init_app(app)
+    migrate.init_app(app, db)
+
+    # apply the blueprints to the app
+    from src.controllers import userController, postController
+
+    app.register_blueprint(userController.app)
+    app.register_blueprint(postController.app)
 
     return app
